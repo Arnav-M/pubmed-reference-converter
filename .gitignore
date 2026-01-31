@@ -1,0 +1,41 @@
+# Citation Files
+*.nbib
+*.ris
+*.bib
+*.enw
+*.xml
+*.txt
+*.csv
+*.xlsx
+
+# Except example/template files
+!example*.nbib
+!example*.ris
+!example*.txt
+
+# PowerShell
+*.ps1~
+*.swp
+
+# Output Files
+extracted_*.csv
+*_with_urls.ris
+urls_with_titles.*
+extracted_urls.txt
+
+# System Files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Backup Files
+*.bak
+*.backup
+*~
+
+# Logs
+*.log
+
+# Temporary Files
+tmp/
+temp/
