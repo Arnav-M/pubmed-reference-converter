@@ -1,18 +1,10 @@
-# Extract URLs from RIS files and get their titles
-Write-Host "Extracting URLs from RIS files..." -ForegroundColor Green
+﻿# Extract URLs from RIS files and get their titles
+param(
+    [string]$CsvOutput = "urls_with_titles.csv",
+    [string]$TextOutput = "urls_with_titles.txt",
+    [string]$UrlsOutput = "extracted_urls.txt"
+)
 
-# Extract URLs from RIS files
-$urls = Get-Content *.ris | Select-String -Pattern "^(UR|L1|L2|L3)\s*-\s*(.+)" | ForEach-Object { 
-    $_.Matches.Groups[2].Value.Trim() 
-} | Sort-Object -Unique
-
-Write-Host "Found $($urls.Count) unique URLs" -ForegroundColor Yellow
-
-# Save URLs to text file
-$urls | Out-File -FilePath "extracted_urls.txt" -Encoding UTF8
-Write-Host "URLs saved to extracted_urls.txt" -ForegroundColor Green
-
-# Function to get page title from URL
 function Get-PageTitle {
     param($url)
     try {
@@ -27,27 +19,82 @@ function Get-PageTitle {
     }
 }
 
-# Create results with titles
-Write-Host "Fetching titles for each URL..." -ForegroundColor Green
-$results = @()
+function Select-ExportRisFiles {
+    param(
+        [System.IO.FileInfo[]]$AllFiles
+    )
 
+    $selected = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
+    $allNames = @($AllFiles | ForEach-Object { $_.Name })
+
+    foreach ($file in $AllFiles) {
+        $stem = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+
+        if ($stem -match '-with-urls$') {
+            [void]$selected.Add($file)
+            continue
+        }
+
+        $enrichedName = "$stem-with-urls.ris"
+        if ($allNames -contains $enrichedName) {
+            continue
+        }
+
+        [void]$selected.Add($file)
+    }
+
+    return ,$selected.ToArray()
+}
+
+$canonicalRis = Join-Path (Get-Location) "references.ris"
+if (Test-Path $canonicalRis) {
+    $risFiles = @(Get-Item -Path $canonicalRis)
+}
+else {
+    $allRisFiles = @(Get-ChildItem -Filter "*.ris" -File -ErrorAction SilentlyContinue)
+    $risFiles = Select-ExportRisFiles -AllFiles $allRisFiles
+}
+
+if ($risFiles.Count -eq 0) {
+    Write-Error "NO_RIS_FILES"
+    exit 1
+}
+
+$urls = @()
+foreach ($risFile in $risFiles) {
+    $lines = Get-Content -Path $risFile.FullName -Encoding UTF8 -ErrorAction Stop
+    foreach ($line in $lines) {
+        if ($line -match '^(UR|L1|L2|L3)\s*-\s*(.+)$') {
+            $urls += $matches[2].Trim()
+        }
+    }
+}
+
+$urls = $urls | Sort-Object -Unique
+
+if ($urls.Count -eq 0) {
+    Write-Error "NO_URLS"
+    exit 2
+}
+
+$urls | Out-File -FilePath $UrlsOutput -Encoding UTF8
+
+$results = @()
+$index = 0
 foreach ($url in $urls) {
-    Write-Host "Processing: $url" -ForegroundColor Cyan
+    $index++
+    $percent = [math]::Round(($index / $urls.Count) * 100)
+    Write-Progress -Activity "Fetching web titles" -Status "$index of $($urls.Count)" -PercentComplete $percent
     $title = Get-PageTitle -url $url
     $results += [PSCustomObject]@{
         URL = $url
         Title = $title
     }
-    Start-Sleep -Milliseconds 500  # Be respectful to servers
+    Start-Sleep -Milliseconds 500
 }
+Write-Progress -Activity "Fetching web titles" -Completed
 
-# Save results to CSV and text file
-$results | Export-Csv -Path "urls_with_titles.csv" -NoTypeInformation -Encoding UTF8
-$results | ForEach-Object { "$($_.URL) - $($_.Title)" } | Out-File -FilePath "urls_with_titles.txt" -Encoding UTF8
+$results | Export-Csv -Path $CsvOutput -NoTypeInformation -Encoding UTF8
+$results | ForEach-Object { "$($_.URL) - $($_.Title)" } | Out-File -FilePath $TextOutput -Encoding UTF8
 
-Write-Host "Results saved to:" -ForegroundColor Green
-Write-Host "  - urls_with_titles.csv (CSV format)" -ForegroundColor White
-Write-Host "  - urls_with_titles.txt (Text format)" -ForegroundColor White
-Write-Host "  - extracted_urls.txt (URLs only)" -ForegroundColor White
-
-Write-Host "Processing complete!" -ForegroundColor Green 
+Write-Output "OK|$($urls.Count)|$CsvOutput|$($risFiles.Count)"

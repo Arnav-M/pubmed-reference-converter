@@ -1,4 +1,8 @@
-# PowerShell script to convert .nbib (MEDLINE) files to .ris format
+﻿# PowerShell script to convert .nbib (MEDLINE) files to .ris format
+param(
+    [string]$InputFile,
+    [string]$OutputFile
+)
 
 function Convert-NbibToRis {
     param(
@@ -58,6 +62,14 @@ function Convert-NbibToRis {
                         }
                         'DP' { $risEntry += "PY  - $value`r`n" }
                         'PMID' { $risEntry += "AN  - $value`r`n" }
+                        'PMC' {
+                            $pmcId = $value.Trim()
+                            if ($pmcId -notmatch '^PMC') {
+                                $pmcId = "PMC$pmcId"
+                            }
+                            $risEntry += "C2  - $pmcId`r`n"
+                        }
+                        'PT' { $risEntry += "C3  - $value`r`n" }
                         'DOI' { $risEntry += "DO  - $value`r`n" }
                         'SO' { $risEntry += "JF  - $value`r`n" }
                         'SB' { $risEntry += "KW  - $value`r`n" }
@@ -68,8 +80,15 @@ function Convert-NbibToRis {
                                 $risEntry += "DO  - $($value -replace '\s*\[doi\]', '')`r`n"
                             }
                         }
-                        'AID' { 
-                            if ($value -match 'doi') {
+                        'AID' {
+                            if ($value -match '\[pmc\]') {
+                                $pmcRaw = ($value -replace '\s*\[pmc\]', '').Trim()
+                                if ($pmcRaw -notmatch '^PMC') {
+                                    $pmcRaw = "PMC$pmcRaw"
+                                }
+                                $risEntry += "C2  - $pmcRaw`r`n"
+                            }
+                            elseif ($value -match 'doi') {
                                 $risEntry += "DO  - $($value -replace '\s*\[doi\]', '')`r`n"
                             }
                         }
@@ -93,12 +112,6 @@ function Convert-NbibToRis {
         Write-Host "Error during conversion: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
-
-# Main script
-param(
-    [string]$InputFile,
-    [string]$OutputFile
-)
 
 if (-not $InputFile) {
     Write-Host "Usage: .\nbib_to_ris_converter.ps1 -InputFile input.nbib -OutputFile output.ris" -ForegroundColor Yellow

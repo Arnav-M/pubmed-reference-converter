@@ -1,41 +1,47 @@
-# Citation Files
+﻿# Python GUI
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# PyInstaller / Inno Setup
+build/
+dist/
+installer/output/
+*.exe
+
+# Citation / data files (user data)
 *.nbib
 *.ris
 *.bib
 *.enw
 *.xml
-*.txt
 *.csv
 *.xlsx
 
-# Except example/template files
-!example*.nbib
-!example*.ris
-!example*.txt
-
-# PowerShell
-*.ps1~
-*.swp
-
-# Output Files
+# Output files
 extracted_*.csv
 *_with_urls.ris
 urls_with_titles.*
 extracted_urls.txt
+references.ris
+prisma_summary.txt
+duplicates_removed.csv
+.pubmed-work/
 
-# System Files
+# System
 Thumbs.db
 .DS_Store
 desktop.ini
+.idea/
+.vscode/
 
-# Backup Files
+# Backup / temp
 *.bak
 *.backup
 *~
-
-# Logs
+*.ps1~
+*.swp
 *.log
-
-# Temporary Files
 tmp/
 temp/
