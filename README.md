@@ -288,7 +288,7 @@ MIT License - Free for academic and commercial use
 If you use these tools in your research, please acknowledge:
 ```
 PubMed Reference Converter - PowerShell toolkit for citation format conversion
-https://github.com/YOUR_USERNAME/pubmed-converter
+https://github.com/Arnav-M/pubmed-reference-converter
 ```
 
 ## Support
